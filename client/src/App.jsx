@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import CreateRoom from './pages/CreateRoom'
+import JoinRoom from './pages/JoinRoom'
+import Lobby from './pages/Lobby'
 
 const ProtectedRoute = ({ children }) => {
   const { token } = useAuth()
@@ -16,11 +19,10 @@ const AppRoutes = () => {
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/create-room" element={<ProtectedRoute><CreateRoom /></ProtectedRoute>} />
+      <Route path="/join-room" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
+      <Route path="/room/:roomCode" element={<ProtectedRoute><Lobby /></ProtectedRoute>} />
     </Routes>
   )
 }

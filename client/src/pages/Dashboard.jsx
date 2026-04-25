@@ -11,8 +11,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-green-800 text-white px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <nav className="bg-[#14532D] text-white px-6 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">BidExpert11 🏏</h1>
         <div className="flex items-center gap-4">
           <span className="text-green-200">Welcome, {user?.name || 'Player'}!</span>
@@ -26,17 +26,23 @@ const Dashboard = () => {
       </nav>
 
       <div className="max-w-4xl mx-auto mt-16 px-4 text-center">
-        <h2 className="text-4xl font-bold text-green-800 mb-4">Welcome to BidExpert11! 🏏</h2>
+        <h2 className="text-4xl font-bold text-[#14532D] mb-4">Welcome to BidExpert11! 🏏</h2>
         <p className="text-gray-500 text-lg mb-8">Your fantasy cricket auction platform</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="bg-white rounded-2xl shadow p-8 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-green-500">
+          <div
+            onClick={() => navigate('/create-room')}
+            className="bg-white rounded-2xl shadow p-8 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-[#14532D]"
+          >
             <div className="text-5xl mb-4">🏟️</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Create Auction Room</h3>
             <p className="text-gray-500">Host a cricket auction and invite your friends</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow p-8 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-green-500">
+          <div
+            onClick={() => navigate('/join-room')}
+            className="bg-white rounded-2xl shadow p-8 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-[#14532D]"
+          >
             <div className="text-5xl mb-4">🎯</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Join Auction Room</h3>
             <p className="text-gray-500">Enter a room code and start bidding!</p>
