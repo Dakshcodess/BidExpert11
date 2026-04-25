@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import CreateRoom from './pages/CreateRoom'
 import JoinRoom from './pages/JoinRoom'
 import Lobby from './pages/Lobby'
+import Auction from './pages/Auction'
 
 const ProtectedRoute = ({ children }) => {
   const { token } = useAuth()
@@ -23,6 +24,7 @@ const AppRoutes = () => {
       <Route path="/create-room" element={<ProtectedRoute><CreateRoom /></ProtectedRoute>} />
       <Route path="/join-room" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
       <Route path="/room/:roomCode" element={<ProtectedRoute><Lobby /></ProtectedRoute>} />
+      <Route path="/auction/:roomCode" element={<ProtectedRoute><Auction /></ProtectedRoute>} />
     </Routes>
   )
 }

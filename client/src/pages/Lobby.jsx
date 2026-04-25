@@ -116,7 +116,7 @@ const Lobby = () => {
         {/* Host Start Button */}
         {isHost && (
           <button
-            onClick={() => toast.success('Auction starting soon! (Coming in Week 5)')}
+           onClick={() => navigate(`/auction/${roomCode}`)}
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 rounded-2xl text-lg transition shadow-lg"
           >
             🚀 Start Auction
