@@ -1,18 +1,14 @@
 const Room = require('../models/Room')
 const Team = require('../models/Team')
 
-// Generate random 6-char room code
 const generateRoomCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
-// @desc Create a room
 const createRoom = async (req, res) => {
-  const { name, pursePerTeam } = req.body
+  const { name, pursePerTeam, bidTimer } = req.body
   try {
     let roomCode = generateRoomCode()
-
-    // Make sure code is unique
     let exists = await Room.findOne({ roomCode })
     while (exists) {
       roomCode = generateRoomCode()
@@ -25,9 +21,9 @@ const createRoom = async (req, res) => {
       hostId: req.user._id,
       participants: [req.user._id],
       pursePerTeam: pursePerTeam || 100,
+      bidTimer: bidTimer || 15,
     })
 
-    // Create team for host
     await Team.create({
       roomId: room._id,
       userId: req.user._id,
@@ -41,7 +37,6 @@ const createRoom = async (req, res) => {
   }
 }
 
-// @desc Join a room
 const joinRoom = async (req, res) => {
   const { roomCode } = req.body
   try {
@@ -52,14 +47,12 @@ const joinRoom = async (req, res) => {
     if (!room) return res.status(404).json({ message: 'Room not found!' })
     if (room.status === 'ended') return res.status(400).json({ message: 'This auction has ended!' })
 
-    // Check if already in room
     const alreadyIn = room.participants.some(p => p._id.toString() === req.user._id.toString())
 
     if (!alreadyIn) {
       room.participants.push(req.user._id)
       await room.save()
 
-      // Create team for new participant
       await Team.create({
         roomId: room._id,
         userId: req.user._id,
@@ -74,7 +67,6 @@ const joinRoom = async (req, res) => {
   }
 }
 
-// @desc Get room by code
 const getRoom = async (req, res) => {
   try {
     const room = await Room.findOne({ roomCode: req.params.code })
