@@ -5,6 +5,13 @@ import { io } from 'socket.io-client'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 
+const formatPrice = (val) => {
+  if (!val && val !== 0) return '0'
+  if (val < 1) return `₹${(val * 100).toFixed(0)} L`
+  if (val % 1 === 0) return `₹${val} Cr`
+  return `₹${val.toFixed(2)} Cr`
+}
+
 const Auction = () => {
   const { roomCode } = useParams()
   const { user, token } = useAuth()
@@ -50,7 +57,7 @@ const Auction = () => {
       socket.emit('join_room', { roomCode, user })
     })
 
-    socket.on('auction_started', (state) => {
+    socket.on('auction_started', () => {
       setAuctionStatus('active')
       toast.success('Auction started! 🏏')
     })
@@ -60,7 +67,7 @@ const Auction = () => {
       setCurrentBid(currentBid)
       setCurrentLeader(null)
       setTimeLeft(timeLeft)
-      setBidAmount(currentBid + 1)
+      setBidAmount(Number((currentBid + 0.25).toFixed(2)))
       setShowSold(false)
     })
 
@@ -68,9 +75,9 @@ const Auction = () => {
       setCurrentBid(amount)
       setCurrentLeader(bidder)
       setTimeLeft(timeLeft)
-      setBidAmount(amount + 1)
+      setBidAmount(Number((amount + 0.25).toFixed(2)))
       if (bidder._id !== user._id) {
-        toast(`${bidder.name} bid ₹${amount} Cr!`, { icon: '🔥' })
+        toast(`${bidder.name} bid ${formatPrice(amount)}!`, { icon: '🔥' })
       }
     })
 
@@ -83,9 +90,9 @@ const Auction = () => {
       setShowSold(true)
       setSoldPlayers(prev => [...prev, { player, soldTo, soldPrice }])
       if (soldTo._id === user._id) {
-        toast.success(`You won ${player.name} for ₹${soldPrice} Cr! 🎉`)
+        toast.success(`You won ${player.name} for ${formatPrice(soldPrice)}! 🎉`)
       } else {
-        toast(`${player.name} sold to ${soldTo.name} for ₹${soldPrice} Cr`, { icon: '🏏' })
+        toast(`${player.name} sold to ${soldTo.name} for ${formatPrice(soldPrice)}`, { icon: '🏏' })
       }
     })
 
@@ -134,51 +141,48 @@ const Auction = () => {
 
   const renderStats = (player) => {
     if (!player) return null
-    if (player.role === 'Batsman') return (
+
+    let stats = []
+
+    if (player.role === 'Batsman') {
+      stats = [
+        ['Innings', player.battingStats?.innings],
+        ['Runs', player.battingStats?.runs],
+        ['SR', player.battingStats?.strikeRate],
+        ['Avg', player.battingStats?.average],
+        ['HS', player.battingStats?.highScore],
+        ['50s/100s', `${player.battingStats?.fifties}/${player.battingStats?.hundreds}`],
+      ]
+    } else if (player.role === 'Bowler') {
+      stats = [
+        ['Innings', player.bowlingStats?.innings],
+        ['Wickets', player.bowlingStats?.wickets],
+        ['Economy', player.bowlingStats?.economy],
+        ['Average', player.bowlingStats?.average],
+        ['Best', player.bowlingStats?.bestFigures],
+        ['4W', player.bowlingStats?.fourWickets],
+      ]
+    } else if (player.role === 'All-rounder') {
+      stats = [
+        ['Innings', player.allRounderStats?.innings],
+        ['Runs', player.allRounderStats?.runs],
+        ['SR', player.allRounderStats?.strikeRate],
+        ['Wickets', player.allRounderStats?.wickets],
+        ['Economy', player.allRounderStats?.economy],
+      ]
+    } else if (player.role === 'Wicket-keeper') {
+      stats = [
+        ['Innings', player.keeperStats?.innings],
+        ['Runs', player.keeperStats?.runs],
+        ['SR', player.keeperStats?.strikeRate],
+        ['Average', player.keeperStats?.average],
+        ['Dismissals', player.keeperStats?.dismissals],
+      ]
+    }
+
+    return (
       <div className="grid grid-cols-3 gap-3 mt-4">
-        {[['Innings', player.battingStats?.innings], ['Runs', player.battingStats?.runs],
-          ['SR', player.battingStats?.strikeRate], ['Avg', player.battingStats?.average],
-          ['HS', player.battingStats?.highScore], ['50s/100s', `${player.battingStats?.fifties}/${player.battingStats?.hundreds}`]
-        ].map(([label, val]) => (
-          <div key={label} className="bg-green-50 rounded-xl p-2 text-center">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="font-bold text-[#14532D]">{val}</p>
-          </div>
-        ))}
-      </div>
-    )
-    if (player.role === 'Bowler') return (
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        {[['Innings', player.bowlingStats?.innings], ['Wickets', player.bowlingStats?.wickets],
-          ['Economy', player.bowlingStats?.economy], ['Average', player.bowlingStats?.average],
-          ['Best', player.bowlingStats?.bestFigures], ['4W', player.bowlingStats?.fourWickets]
-        ].map(([label, val]) => (
-          <div key={label} className="bg-green-50 rounded-xl p-2 text-center">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="font-bold text-[#14532D]">{val}</p>
-          </div>
-        ))}
-      </div>
-    )
-    if (player.role === 'All-rounder') return (
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        {[['Innings', player.allRounderStats?.innings], ['Runs', player.allRounderStats?.runs],
-          ['SR', player.allRounderStats?.strikeRate], ['Wickets', player.allRounderStats?.wickets],
-          ['Economy', player.allRounderStats?.economy]
-        ].map(([label, val]) => (
-          <div key={label} className="bg-green-50 rounded-xl p-2 text-center">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="font-bold text-[#14532D]">{val}</p>
-          </div>
-        ))}
-      </div>
-    )
-    if (player.role === 'Wicket-keeper') return (
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        {[['Innings', player.keeperStats?.innings], ['Runs', player.keeperStats?.runs],
-          ['SR', player.keeperStats?.strikeRate], ['Average', player.keeperStats?.average],
-          ['Dismissals', player.keeperStats?.dismissals]
-        ].map(([label, val]) => (
+        {stats.map(([label, val]) => (
           <div key={label} className="bg-green-50 rounded-xl p-2 text-center">
             <p className="text-xs text-gray-500">{label}</p>
             <p className="font-bold text-[#14532D]">{val}</p>
@@ -194,7 +198,9 @@ const Auction = () => {
       <nav className="bg-[#14532D] text-white px-6 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">BidExpert11 🏏</h1>
         <div className="flex items-center gap-4">
-          <span className="text-green-200 text-sm">Room: <span className="font-bold text-white">{roomCode}</span></span>
+          <span className="text-green-200 text-sm">
+            Room: <span className="font-bold text-white">{roomCode}</span>
+          </span>
           {auctionStatus === 'active' && (
             <span className={`text-2xl font-bold ${getTimerColor()}`}>{timeLeft}s</span>
           )}
@@ -219,15 +225,18 @@ const Auction = () => {
       {/* Active auction */}
       {auctionStatus === 'active' && (
         <div className="max-w-5xl mx-auto px-4 py-6">
+
+          {/* SOLD banner */}
           {showSold && lastSold ? (
             <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-8 text-center mb-6 animate-pulse">
               <p className="text-4xl mb-2">🎉 SOLD!</p>
               <p className="text-2xl font-bold text-[#14532D]">{lastSold.player.name}</p>
               <p className="text-gray-600">sold to <span className="font-bold">{lastSold.soldTo.name}</span> for</p>
-              <p className="text-3xl font-bold text-green-600">₹{lastSold.soldPrice} Cr</p>
+              <p className="text-3xl font-bold text-green-600">{formatPrice(lastSold.soldPrice)}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               {/* Player Card */}
               {currentPlayer && (
                 <div className="bg-white rounded-2xl shadow p-6">
@@ -244,7 +253,7 @@ const Auction = () => {
                     </div>
                   </div>
                   <p className="text-sm text-gray-500 mb-1">Base Price</p>
-                  <p className="text-lg font-bold text-[#14532D]">₹{currentPlayer.basePrice} Cr</p>
+                  <p className="text-lg font-bold text-[#14532D]">{formatPrice(currentPlayer.basePrice)}</p>
                   {renderStats(currentPlayer)}
                 </div>
               )}
@@ -253,9 +262,11 @@ const Auction = () => {
               <div className="bg-white rounded-2xl shadow p-6">
                 <div className="text-center mb-6">
                   <p className="text-gray-500 text-sm">Current Bid</p>
-                  <p className="text-5xl font-bold text-[#14532D]">₹{currentBid} Cr</p>
+                  <p className="text-5xl font-bold text-[#14532D]">{formatPrice(currentBid)}</p>
                   {currentLeader && (
-                    <p className="text-gray-500 mt-1">by <span className="font-bold text-green-700">{currentLeader.name}</span></p>
+                    <p className="text-gray-500 mt-1">
+                      by <span className="font-bold text-green-700">{currentLeader.name}</span>
+                    </p>
                   )}
                 </div>
 
@@ -270,29 +281,29 @@ const Auction = () => {
                   </div>
                 </div>
 
-                {/* Bid Input */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(Number(e.target.value))}
-                    className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
+                {/* Bid amount display */}
+                <div className="bg-gray-50 rounded-xl px-4 py-3 text-center text-xl font-bold text-gray-800 mb-3">
+                  {formatPrice(bidAmount)}
                 </div>
 
-                {/* Quick bid buttons */}
+                {/* Quick bid increment buttons */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  {[1, 2, 5].map(inc => (
-                    <button key={inc} onClick={() => setBidAmount(currentBid + inc)}
-                      className="bg-green-50 hover:bg-green-100 text-green-800 font-bold py-2 rounded-xl transition text-sm">
-                      +{inc} Cr
+                  {[0.25, 0.50, 0.75].map(inc => (
+                    <button
+                      key={inc}
+                      onClick={() => setBidAmount(Number((currentBid + inc).toFixed(2)))}
+                      className="bg-green-50 hover:bg-green-100 text-green-800 font-bold py-2 rounded-xl transition text-sm"
+                    >
+                      +{inc < 1 ? `${inc * 100}L` : `${inc}Cr`}
                     </button>
                   ))}
                 </div>
 
-                <button onClick={placeBid}
-                  className="w-full bg-[#14532D] hover:bg-green-900 text-white font-bold py-4 rounded-xl text-lg transition">
-                  🏏 Place Bid
+                <button
+                  onClick={placeBid}
+                  className="w-full bg-[#14532D] hover:bg-green-900 text-white font-bold py-4 rounded-xl text-lg transition"
+                >
+                  🏏 Place Bid — {formatPrice(bidAmount)}
                 </button>
 
                 {/* Host controls */}
@@ -321,7 +332,7 @@ const Auction = () => {
                   <div key={i} className="flex justify-between items-center p-2 bg-gray-50 rounded-xl">
                     <span className="font-medium text-gray-800">{s.player.name}</span>
                     <span className="text-sm text-gray-500">{s.soldTo.name}</span>
-                    <span className="font-bold text-green-700">₹{s.soldPrice} Cr</span>
+                    <span className="font-bold text-green-700">{formatPrice(s.soldPrice)}</span>
                   </div>
                 ))}
               </div>
@@ -336,8 +347,10 @@ const Auction = () => {
           <div className="text-6xl mb-4">🏆</div>
           <h2 className="text-2xl font-bold text-[#14532D] mb-2">Auction Complete!</h2>
           <p className="text-gray-500 mb-4">{soldPlayers.length} players sold</p>
-          <button onClick={() => navigate('/dashboard')}
-            className="bg-[#14532D] text-white font-bold px-8 py-3 rounded-xl">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-[#14532D] text-white font-bold px-8 py-3 rounded-xl"
+          >
             Back to Dashboard
           </button>
         </div>
