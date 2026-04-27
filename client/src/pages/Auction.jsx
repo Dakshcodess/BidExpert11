@@ -12,6 +12,16 @@ const formatPrice = (val) => {
   return `₹${val.toFixed(2)} Cr`
 }
 
+const roleBadge = (role) => {
+  const styles = {
+    'Batsman': 'bg-blue-900/20 text-blue-400 border-blue-800/30',
+    'Bowler': 'bg-red-900/20 text-red-400 border-red-800/30',
+    'All-rounder': 'bg-purple-900/20 text-purple-400 border-purple-800/30',
+    'Wicket-keeper': 'bg-yellow-900/20 text-yellow-400 border-yellow-800/30',
+  }
+  return styles[role] || 'bg-gray-900/20 text-gray-400 border-gray-800/30'
+}
+
 const Auction = () => {
   const { roomCode } = useParams()
   const { user, token } = useAuth()
@@ -23,14 +33,22 @@ const Auction = () => {
   const [currentPlayer, setCurrentPlayer] = useState(null)
   const [currentBid, setCurrentBid] = useState(0)
   const [currentLeader, setCurrentLeader] = useState(null)
-  const [timeLeft, setTimeLeft] = useState(30)
-  const [maxTime, setMaxTime] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(15)
+  const [maxTime, setMaxTime] = useState(15)
   const [bidAmount, setBidAmount] = useState(0)
   const [soldPlayers, setSoldPlayers] = useState([])
   const [soldNotif, setSoldNotif] = useState(null)
   const [showSoldNotif, setShowSoldNotif] = useState(false)
-  const [teams, setTeams] = useState([])
   const [showSidePanel, setShowSidePanel] = useState(false)
+  const [currentCategory, setCurrentCategory] = useState('')
+
+  // Skip/Withdraw votes
+  const [skipVotes, setSkipVotes] = useState(0)
+  const [skipNeeded, setSkipNeeded] = useState(0)
+  const [withdrawVotes, setWithdrawVotes] = useState(0)
+  const [withdrawNeeded, setWithdrawNeeded] = useState(0)
+  const [hasVotedSkip, setHasVotedSkip] = useState(false)
+  const [hasVotedWithdraw, setHasVotedWithdraw] = useState(false)
 
   useEffect(() => {
     fetchRoom()
@@ -66,7 +84,7 @@ const Auction = () => {
       toast.success('Auction started! 🏏')
     })
 
-    socket.on('player_up', ({ player, currentBid, timeLeft }) => {
+    socket.on('player_up', ({ player, currentBid, timeLeft, category }) => {
       setCurrentPlayer(player)
       setCurrentBid(currentBid)
       setCurrentLeader(null)
@@ -74,6 +92,11 @@ const Auction = () => {
       setMaxTime(timeLeft)
       setBidAmount(Number((currentBid + 0.25).toFixed(2)))
       setShowSoldNotif(false)
+      setCurrentCategory(category || player.role)
+      setSkipVotes(0)
+      setWithdrawVotes(0)
+      setHasVotedSkip(false)
+      setHasVotedWithdraw(false)
     })
 
     socket.on('new_bid', ({ amount, bidder, timeLeft }) => {
@@ -81,9 +104,30 @@ const Auction = () => {
       setCurrentLeader(bidder)
       setTimeLeft(timeLeft)
       setBidAmount(Number((amount + 0.25).toFixed(2)))
+      setSkipVotes(0)
+      setWithdrawVotes(0)
+      setHasVotedSkip(false)
+      setHasVotedWithdraw(false)
       if (bidder._id !== user._id) {
         toast(`${bidder.name} bid ${formatPrice(amount)}!`, { icon: '🔥' })
       }
+    })
+
+    socket.on('votes_reset', () => {
+      setSkipVotes(0)
+      setWithdrawVotes(0)
+      setHasVotedSkip(false)
+      setHasVotedWithdraw(false)
+    })
+
+    socket.on('skip_vote_update', ({ votes, needed }) => {
+      setSkipVotes(votes)
+      setSkipNeeded(needed)
+    })
+
+    socket.on('withdraw_vote_update', ({ votes, needed }) => {
+      setWithdrawVotes(votes)
+      setWithdrawNeeded(needed)
     })
 
     socket.on('time_tick', ({ timeLeft }) => setTimeLeft(timeLeft))
@@ -100,8 +144,12 @@ const Auction = () => {
       }
     })
 
-    socket.on('player_unsold', ({ player }) => {
-      toast(`${player.name} went unsold`, { icon: '❌' })
+    socket.on('player_unsold', ({ player, reason }) => {
+      if (reason === 'skipped') {
+        toast(`${player.name} skipped by all`, { icon: '⏭️' })
+      } else {
+        toast(`${player.name} went unsold`, { icon: '❌' })
+      }
     })
 
     socket.on('bid_error', ({ message }) => toast.error(message))
@@ -117,14 +165,31 @@ const Auction = () => {
   }
 
   const startAuction = () => socketRef.current?.emit('start_auction', { roomCode })
+
   const placeBid = () => {
     if (bidAmount <= currentBid) return toast.error('Bid must be higher than current bid!')
     socketRef.current?.emit('place_bid', { roomCode, amount: bidAmount, user })
   }
 
+  const voteSkip = () => {
+    if (hasVotedSkip) return toast.error('Already voted to skip!')
+    if (currentLeader) return toast.error('Cannot skip — someone has already bid!')
+    setHasVotedSkip(true)
+    socketRef.current?.emit('vote_skip', { roomCode, userId: user._id })
+    toast('Voted to skip ⏭️', { icon: '👍' })
+  }
+
+  const voteWithdraw = () => {
+    if (hasVotedWithdraw) return toast.error('Already voted to withdraw!')
+    if (!currentLeader) return toast.error('No one has bid yet!')
+    if (currentLeader._id === user._id) return toast.error('You are the leader — cannot withdraw!')
+    setHasVotedWithdraw(true)
+    socketRef.current?.emit('vote_withdraw', { roomCode, userId: user._id })
+    toast('Voted to withdraw 🏳️', { icon: '👍' })
+  }
+
   const isHost = room?.hostId?._id === user?._id || room?.hostId === user?._id
   const isLeader = currentLeader?._id === user?._id
-
   const timerPercent = maxTime > 0 ? (timeLeft / maxTime) * 100 : 0
   const timerColor = timeLeft > maxTime * 0.5 ? '#14532D' : timeLeft > maxTime * 0.25 ? '#F59E0B' : '#EF4444'
 
@@ -189,15 +254,16 @@ const Auction = () => {
           <h1 className="text-lg font-bold text-white">
             BidExpert<span className="text-[#F59E0B]">11</span>
           </h1>
-          <span className="text-gray-600 text-sm hidden md:block">•</span>
-          <span className="text-gray-500 text-sm hidden md:block">{roomCode}</span>
+          <span className="text-gray-600 text-sm hidden md:block">• {roomCode}</span>
+          {currentCategory && auctionStatus === 'active' && (
+            <span className={`text-xs font-bold px-2 py-1 rounded-full border ${roleBadge(currentCategory)}`}>
+              {currentCategory}s
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {auctionStatus === 'active' && (
-            <div
-              className="text-2xl font-bold tabular-nums"
-              style={{ color: timerColor }}
-            >
+            <div className="text-2xl font-bold tabular-nums" style={{ color: timerColor }}>
               {timeLeft}s
             </div>
           )}
@@ -212,7 +278,7 @@ const Auction = () => {
 
       {/* Sold Notification */}
       {showSoldNotif && soldNotif && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#141414] border border-[#F59E0B]/30 rounded-2xl px-6 py-4 shadow-2xl shadow-yellow-900/20 flex items-center gap-4 animate-bounce">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#141414] border border-[#F59E0B]/30 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4">
           <span className="text-2xl">🎉</span>
           <div>
             <p className="text-white font-bold">{soldNotif.player.name} — SOLD!</p>
@@ -225,7 +291,6 @@ const Auction = () => {
       )}
 
       <div className="flex">
-        {/* Main Content */}
         <div className={`flex-1 transition-all ${showSidePanel ? 'mr-80' : ''}`}>
 
           {/* Waiting */}
@@ -255,20 +320,12 @@ const Auction = () => {
                 {/* Player Card */}
                 {currentPlayer && (
                   <div className="bg-[#141414] border border-white/10 rounded-2xl p-6">
-                    {/* Role badge */}
                     <div className="flex justify-between items-start mb-4">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                        currentPlayer.role === 'Batsman' ? 'bg-blue-900/20 text-blue-400 border-blue-800/30' :
-                        currentPlayer.role === 'Bowler' ? 'bg-red-900/20 text-red-400 border-red-800/30' :
-                        currentPlayer.role === 'All-rounder' ? 'bg-purple-900/20 text-purple-400 border-purple-800/30' :
-                        'bg-yellow-900/20 text-yellow-400 border-yellow-800/30'
-                      }`}>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${roleBadge(currentPlayer.role)}`}>
                         {currentPlayer.role}
                       </span>
                       <span className="text-gray-600 text-xs">{currentPlayer.country}</span>
                     </div>
-
-                    {/* Player info */}
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-16 h-16 rounded-2xl bg-[#14532D] flex items-center justify-center text-white text-2xl font-bold">
                         {currentPlayer.name?.charAt(0)}
@@ -281,14 +338,52 @@ const Auction = () => {
                         </p>
                       </div>
                     </div>
-
                     {renderStats(currentPlayer)}
+
+                    {/* Skip / Withdraw buttons */}
+                    <div className="grid grid-cols-2 gap-3 mt-5">
+                      {/* Skip — only when no one has bid */}
+                      {!currentLeader && (
+                        <button
+                          onClick={voteSkip}
+                          disabled={hasVotedSkip}
+                          className={`py-2 rounded-xl text-sm font-bold border transition ${
+                            hasVotedSkip
+                              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                              : 'bg-red-900/20 border-red-800/30 text-red-400 hover:bg-red-900/40'
+                          }`}
+                        >
+                          ⏭️ Skip ({skipVotes}/{skipNeeded || room?.participants?.length || '?'})
+                        </button>
+                      )}
+
+                      {/* Withdraw — only when someone has bid and you're not the leader */}
+                      {currentLeader && !isLeader && (
+                        <button
+                          onClick={voteWithdraw}
+                          disabled={hasVotedWithdraw}
+                          className={`py-2 rounded-xl text-sm font-bold border transition col-span-2 ${
+                            hasVotedWithdraw
+                              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                              : 'bg-orange-900/20 border-orange-800/30 text-orange-400 hover:bg-orange-900/40'
+                          }`}
+                        >
+                          🏳️ Withdraw ({withdrawVotes}/{withdrawNeeded || (room?.participants?.length - 1) || '?'})
+                        </button>
+                      )}
+
+                      {/* Leading message */}
+                      {currentLeader && isLeader && (
+                        <div className="col-span-2 text-center py-2 bg-[#14532D]/10 border border-[#14532D]/20 rounded-xl">
+                          <p className="text-[#14532D] text-sm font-bold">✅ You are leading — others can withdraw</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* Bid Panel */}
                 <div className="bg-[#141414] border border-white/10 rounded-2xl p-6">
-                  {/* Current Bid */}
                   <div className="text-center mb-5">
                     <p className="text-gray-600 text-xs uppercase tracking-wider mb-1">Current Bid</p>
                     <p className="text-5xl font-bold text-white">{formatPrice(currentBid)}</p>
@@ -306,27 +401,24 @@ const Auction = () => {
                     )}
                   </div>
 
-                  {/* Timer bar */}
+                  {/* Timer */}
                   <div className="mb-5">
                     <div className="w-full bg-[#1a1a1a] rounded-full h-2">
                       <div
                         className="h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${timerPercent}%`,
-                          backgroundColor: timerColor,
-                        }}
+                        style={{ width: `${timerPercent}%`, backgroundColor: timerColor }}
                       />
                     </div>
                     <p className="text-center text-xs text-gray-600 mt-1">{timeLeft} seconds remaining</p>
                   </div>
 
-                  {/* Your bid display */}
+                  {/* Your bid */}
                   <div className="bg-[#1a1a1a] border border-white/5 rounded-xl px-4 py-3 text-center mb-3">
                     <p className="text-xs text-gray-600 mb-1">Your Bid</p>
                     <p className="text-2xl font-bold text-[#F59E0B]">{formatPrice(bidAmount)}</p>
                   </div>
 
-                  {/* Quick bid buttons */}
+                  {/* Quick bid */}
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[0.25, 0.50, 0.75].map(inc => (
                       <button
@@ -339,7 +431,7 @@ const Auction = () => {
                     ))}
                   </div>
 
-                  {/* Place Bid */}
+                  {/* Place bid / Leading */}
                   {!isLeader ? (
                     <button
                       onClick={placeBid}
@@ -398,34 +490,45 @@ const Auction = () => {
         {showSidePanel && (
           <div className="fixed right-0 top-[57px] bottom-0 w-80 bg-[#141414] border-l border-white/10 overflow-y-auto z-30">
             <div className="p-4">
-              <h3 className="text-white font-bold mb-4">Teams & Squads</h3>
-              {room?.participants?.map((p, i) => (
-                <div key={i} className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 mb-3">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-[#14532D] flex items-center justify-center text-white text-xs font-bold">
-                      {p.name?.charAt(0)}
+              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                <span>Teams & Squads</span>
+                <span className="text-gray-600 text-xs font-normal">({room?.participants?.length} teams)</span>
+              </h3>
+              {room?.participants?.map((p, i) => {
+                const teamPlayers = soldPlayers.filter(s => s.soldTo._id === p._id)
+                const totalSpent = teamPlayers.reduce((sum, s) => sum + s.soldPrice, 0)
+                return (
+                  <div key={i} className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-[#14532D] flex items-center justify-center text-white text-xs font-bold">
+                        {p.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white text-sm font-bold">
+                          {p.name} {p._id === user._id && <span className="text-[#F59E0B] text-xs">(you)</span>}
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          {teamPlayers.length} players • Spent: {formatPrice(totalSpent)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white text-sm font-bold">{p.name}</p>
-                      {p._id === user._id && (
-                        <span className="text-[#F59E0B] text-xs">(you)</span>
+                    <div className="space-y-1 mt-2">
+                      {teamPlayers.map((s, j) => (
+                        <div key={j} className="flex justify-between items-center">
+                          <span className="text-gray-400 text-xs">{s.player.name}</span>
+                          <span className={`text-xs font-bold px-1 rounded ${roleBadge(s.player.role)}`}>
+                            {s.player.role?.charAt(0)}
+                          </span>
+                          <span className="text-[#F59E0B] text-xs font-medium">{formatPrice(s.soldPrice)}</span>
+                        </div>
+                      ))}
+                      {teamPlayers.length === 0 && (
+                        <p className="text-gray-700 text-xs text-center py-1">No players yet</p>
                       )}
                     </div>
                   </div>
-                  {/* Players bought by this team */}
-                  <div className="space-y-1">
-                    {soldPlayers.filter(s => s.soldTo._id === p._id).map((s, j) => (
-                      <div key={j} className="flex justify-between items-center">
-                        <span className="text-gray-400 text-xs">{s.player.name}</span>
-                        <span className="text-[#F59E0B] text-xs font-medium">{formatPrice(s.soldPrice)}</span>
-                      </div>
-                    ))}
-                    {soldPlayers.filter(s => s.soldTo._id === p._id).length === 0 && (
-                      <p className="text-gray-700 text-xs">No players yet</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
