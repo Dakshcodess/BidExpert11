@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 const Player = require('../models/Player')
-const players = require('./players')
+const players = require('./iplPlayers')
 
 dotenv.config({ path: '../.env' })
 
