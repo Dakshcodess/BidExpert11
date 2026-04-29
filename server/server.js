@@ -6,6 +6,7 @@ const { Server } = require('socket.io')
 const connectDB = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const roomRoutes = require('./routes/roomRoutes')
+const pdfRoutes = require('./routes/pdfRoutes')
 const initSocket = require('./socket')
 
 dotenv.config()
@@ -30,6 +31,7 @@ app.use(express.json())
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/rooms', roomRoutes)
+app.use('/api/pdf', pdfRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'BidExpert11 server is running! 🏏' })

@@ -41,8 +41,6 @@ const Auction = () => {
   const [showSoldNotif, setShowSoldNotif] = useState(false)
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [currentCategory, setCurrentCategory] = useState('')
-
-  // Skip/Withdraw votes
   const [skipVotes, setSkipVotes] = useState(0)
   const [skipNeeded, setSkipNeeded] = useState(0)
   const [withdrawVotes, setWithdrawVotes] = useState(0)
@@ -245,7 +243,6 @@ const Auction = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Navbar */}
       <nav className="bg-[#141414] border-b border-white/10 px-6 py-3 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#14532D] rounded-lg flex items-center justify-center">
@@ -276,7 +273,6 @@ const Auction = () => {
         </div>
       </nav>
 
-      {/* Sold Notification */}
       {showSoldNotif && soldNotif && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#141414] border border-[#F59E0B]/30 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4">
           <span className="text-2xl">🎉</span>
@@ -284,7 +280,7 @@ const Auction = () => {
             <p className="text-white font-bold">{soldNotif.player.name} — SOLD!</p>
             <p className="text-gray-400 text-sm">
               to <span className="text-[#F59E0B] font-medium">{soldNotif.soldTo.name}</span> for{' '}
-              <span className="text-[#14532D] font-bold">{formatPrice(soldNotif.soldPrice)}</span>
+              <span className="text-green-400 font-bold">{formatPrice(soldNotif.soldPrice)}</span>
             </p>
           </div>
         </div>
@@ -293,7 +289,6 @@ const Auction = () => {
       <div className="flex">
         <div className={`flex-1 transition-all ${showSidePanel ? 'mr-80' : ''}`}>
 
-          {/* Waiting */}
           {auctionStatus === 'waiting' && (
             <div className="max-w-lg mx-auto mt-24 text-center px-4">
               <div className="w-20 h-20 bg-[#14532D]/10 border border-[#14532D]/20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -312,12 +307,9 @@ const Auction = () => {
             </div>
           )}
 
-          {/* Active Auction */}
           {auctionStatus === 'active' && (
             <div className="max-w-4xl mx-auto px-4 py-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* Player Card */}
                 {currentPlayer && (
                   <div className="bg-[#141414] border border-white/10 rounded-2xl p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -340,9 +332,7 @@ const Auction = () => {
                     </div>
                     {renderStats(currentPlayer)}
 
-                    {/* Skip / Withdraw buttons */}
                     <div className="grid grid-cols-2 gap-3 mt-5">
-                      {/* Skip — only when no one has bid */}
                       {!currentLeader && (
                         <button
                           onClick={voteSkip}
@@ -356,8 +346,6 @@ const Auction = () => {
                           ⏭️ Skip ({skipVotes}/{skipNeeded || room?.participants?.length || '?'})
                         </button>
                       )}
-
-                      {/* Withdraw — only when someone has bid and you're not the leader */}
                       {currentLeader && !isLeader && (
                         <button
                           onClick={voteWithdraw}
@@ -371,8 +359,6 @@ const Auction = () => {
                           🏳️ Withdraw ({withdrawVotes}/{withdrawNeeded || (room?.participants?.length - 1) || '?'})
                         </button>
                       )}
-
-                      {/* Leading message */}
                       {currentLeader && isLeader && (
                         <div className="col-span-2 text-center py-2 bg-[#14532D]/10 border border-[#14532D]/20 rounded-xl">
                           <p className="text-[#14532D] text-sm font-bold">✅ You are leading — others can withdraw</p>
@@ -382,7 +368,6 @@ const Auction = () => {
                   </div>
                 )}
 
-                {/* Bid Panel */}
                 <div className="bg-[#141414] border border-white/10 rounded-2xl p-6">
                   <div className="text-center mb-5">
                     <p className="text-gray-600 text-xs uppercase tracking-wider mb-1">Current Bid</p>
@@ -401,7 +386,6 @@ const Auction = () => {
                     )}
                   </div>
 
-                  {/* Timer */}
                   <div className="mb-5">
                     <div className="w-full bg-[#1a1a1a] rounded-full h-2">
                       <div
@@ -412,13 +396,11 @@ const Auction = () => {
                     <p className="text-center text-xs text-gray-600 mt-1">{timeLeft} seconds remaining</p>
                   </div>
 
-                  {/* Your bid */}
                   <div className="bg-[#1a1a1a] border border-white/5 rounded-xl px-4 py-3 text-center mb-3">
                     <p className="text-xs text-gray-600 mb-1">Your Bid</p>
                     <p className="text-2xl font-bold text-[#F59E0B]">{formatPrice(bidAmount)}</p>
                   </div>
 
-                  {/* Quick bid */}
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[0.25, 0.50, 0.75].map(inc => (
                       <button
@@ -431,7 +413,6 @@ const Auction = () => {
                     ))}
                   </div>
 
-                  {/* Place bid / Leading */}
                   {!isLeader ? (
                     <button
                       onClick={placeBid}
@@ -447,7 +428,6 @@ const Auction = () => {
                 </div>
               </div>
 
-              {/* Sold Players */}
               {soldPlayers.length > 0 && (
                 <div className="bg-[#141414] border border-white/10 rounded-2xl p-6 mt-6">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
@@ -470,23 +450,29 @@ const Auction = () => {
             </div>
           )}
 
-          {/* Ended */}
           {auctionStatus === 'ended' && (
             <div className="max-w-lg mx-auto mt-24 text-center px-4">
               <div className="text-6xl mb-4">🏆</div>
               <h2 className="text-2xl font-bold text-white mb-2">Auction Complete!</h2>
-              <p className="text-gray-500 mb-2">{soldPlayers.length} players sold</p>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="mt-6 bg-[#14532D] hover:bg-green-800 text-white font-bold px-8 py-3 rounded-xl transition"
-              >
-                Back to Dashboard
-              </button>
+              <p className="text-gray-500 mb-6">{soldPlayers.length} players sold</p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => window.open(`http://localhost:5000/api/pdf/${roomCode}`, '_blank')}
+                  className="w-full bg-[#F59E0B] hover:bg-yellow-500 text-black font-bold py-4 rounded-xl transition shadow-lg"
+                >
+                  📄 Download Auction Results PDF
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full bg-[#14532D] hover:bg-green-800 text-white font-bold py-4 rounded-xl transition"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Side Panel */}
         {showSidePanel && (
           <div className="fixed right-0 top-[57px] bottom-0 w-80 bg-[#141414] border-l border-white/10 overflow-y-auto z-30">
             <div className="p-4">
