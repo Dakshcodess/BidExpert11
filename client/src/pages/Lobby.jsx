@@ -48,6 +48,10 @@ const Lobby = () => {
   )
 
   const isHost = room?.hostId?._id === user?._id || room?.hostId === user?._id
+  console.log("ROOM:", room)
+console.log("USER:", user)
+console.log("HOSTID:", room?.hostId)
+console.log("ISHOST:", isHost)
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
