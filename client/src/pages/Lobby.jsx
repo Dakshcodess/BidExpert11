@@ -210,6 +210,7 @@ console.log("ISHOST", isHost)
         {isHost && (
          <button
            onClick={() => {
+            console.log("BUTTON CLICKED")
             console.log("SOCKET:", socketRef.current)
 
              socketRef.current.emit('start_auction', { roomCode })
