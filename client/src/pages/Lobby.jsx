@@ -65,7 +65,9 @@ const Lobby = () => {
   const isHost =
     room?.hostId?._id === user?._id ||
     room?.hostId === user?._id
-
+console.log("USER", user)
+console.log("ROOM HOST", room?.hostId)
+console.log("ISHOST", isHost)
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <nav className="bg-[#141414] border-b border-white/10 px-6 py-4 flex justify-between items-center">
