@@ -15,7 +15,7 @@ const JoinRoom = () => {
     if (roomCode.length !== 6) return toast.error('Room code must be 6 characters!')
     setLoading(true)
     try {
-      const { data } = await axios.post('http://localhost:5000/api/rooms/join',
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/rooms/join`,
         { roomCode: roomCode.toUpperCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       )

@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null)
   const [loading, setLoading] = useState(false)
 
-  const API = 'http://localhost:5000/api'
+  const API = `${import.meta.env.VITE_API_URL}/api`
 
   useEffect(() => {
     if (token) {

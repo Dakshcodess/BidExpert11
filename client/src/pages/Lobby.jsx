@@ -13,7 +13,7 @@ const Lobby = () => {
 
   const fetchRoom = async () => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/rooms/${roomCode}`, {
+     const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/rooms/${roomCode}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setRoom(data)

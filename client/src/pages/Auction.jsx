@@ -56,7 +56,7 @@ const Auction = () => {
 
   const fetchRoom = async () => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/rooms/${roomCode}`, {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/rooms/${roomCode}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setRoom(data)
@@ -69,7 +69,7 @@ const Auction = () => {
   }
 
   const connectSocket = () => {
-    const socket = io('http://localhost:5000')
+    const socket = io(import.meta.env.VITE_API_URL)
     socketRef.current = socket
 
     socket.on('connect', () => {
@@ -457,7 +457,7 @@ const Auction = () => {
               <p className="text-gray-500 mb-6">{soldPlayers.length} players sold</p>
               <div className="space-y-3">
                 <button
-                  onClick={() => window.open(`http://localhost:5000/api/pdf/${roomCode}`, '_blank')}
+                  onClick={() => window.open(`${import.meta.env.VITE_API_URL}/api/pdf/${roomCode}`, '_blank')}
                   className="w-full bg-[#F59E0B] hover:bg-yellow-500 text-black font-bold py-4 rounded-xl transition shadow-lg"
                 >
                   📄 Download Auction Results PDF
