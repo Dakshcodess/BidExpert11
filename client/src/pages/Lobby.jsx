@@ -208,14 +208,16 @@ console.log("ISHOST", isHost)
         </div>
 
         {isHost && (
-          <button
-            onClick={() => navigate(`/auction/${roomCode}`)}
-            className="w-full bg-[#F59E0B] hover:bg-yellow-500 text-black font-bold py-4 rounded-2xl text-lg transition shadow-lg shadow-yellow-900/20"
-          >
-            🚀 Start Auction
-          </button>
+         <button
+           onClick={() => {
+             socketRef.current.emit('start_auction', { roomCode })
+             navigate(`/auction/${roomCode}`)
+           }}
+           className="w-full bg-[#F59E0B] hover:bg-yellow-500 text-black font-bold py-4 rounded-2xl"
+         >
+           🚀 Start Auction
+         </button>
         )}
-
         {!isHost && (
           <div className="text-center py-4">
             <div className="w-2 h-2 bg-[#14532D] rounded-full animate-pulse inline-block mr-2" />
