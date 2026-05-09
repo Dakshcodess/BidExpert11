@@ -80,6 +80,8 @@ const Auction = () => {
       setAuctionStatus('active')
       setMaxTime(state.bidTimer || 15)
       toast.success('Auction started! 🏏')
+
+       navigate(`/auction/${roomCode}`)
     })
 
     socket.on('player_up', ({ player, currentBid, timeLeft, category }) => {
