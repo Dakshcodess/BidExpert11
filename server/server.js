@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes')
 const roomRoutes = require('./routes/roomRoutes')
 const pdfRoutes = require('./routes/pdfRoutes')
 const initSocket = require('./socket')
-
+const path = require('path')
 dotenv.config()
 
 connectDB()
@@ -27,7 +27,10 @@ initSocket(io)
 
 app.use(cors({ origin: process.env.CLIENT_URL }))
 app.use(express.json())
-
+app.use('/players', (req, res, next) => {
+  req.url = decodeURIComponent(req.url)
+  next()
+}, express.static(path.join(__dirname, 'public/players')))
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/rooms', roomRoutes)
