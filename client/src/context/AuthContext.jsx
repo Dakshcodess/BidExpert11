@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data)
       setToken(data.token)
       localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data))
       axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
       return { success: true }
     } catch (error) {
@@ -39,6 +40,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data)
       setToken(data.token)
       localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data))
       axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
       return { success: true }
     } catch (error) {
