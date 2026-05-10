@@ -18,14 +18,24 @@ const server = http.createServer(app)
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
-    methods: ['GET', 'POST']
+    origin: [
+      'http://localhost:5173',
+      'https://bid-expert11.vercel.app'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 })
 
 initSocket(io)
 
-app.use(cors({ origin: process.env.CLIENT_URL }))
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://bid-expert11.vercel.app'
+  ],
+  credentials: true
+}))
 app.use(express.json())
 app.use('/players', (req, res, next) => {
   req.url = decodeURIComponent(req.url)
